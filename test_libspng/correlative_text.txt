@@ -1,0 +1,63 @@
+Generate a function called LLVMFuzzerTestOneInput, which accpets a `const uint8_t*` and a `size_t` parameter as the inputs, 
+and be able to invoke the function `spng_decode_image`.
+
+Here's the decription of function `spng_decode_image`:
+# spng_decode_image()
+```c
+int spng_decode_image(spng_ctx *ctx, void *out, size_t len, int fmt, int flags)
+```
+
+Decodes the PNG file and writes the image to `out`,
+the image is converted from the PNG format to the destination format `fmt`.
+
+Interlaced images are deinterlaced, 16-bit images are converted to host-endian.
+
+`out` must point to a buffer of length `len`.
+
+`len` must be equal to or greater than the number calculated with
+`spng_decoded_image_size()` with the same output format.
+
+If the `SPNG_DECODE_PROGRESSIVE` flag is set the decoder will be
+initialized with `fmt` and `flags` for progressive decoding,
+the values of `out`, `len` are ignored.
+
+The `SPNG_DECODE_TRNS` flag is silently ignored if the PNG does not
+contain a tRNS chunk or is not applicable for the color type.
+
+This function can only be called once per context.
+
+The information about `spng_decode_image` in the README.md is as follows:
+/* Decode to 8-bit RGBA */
+spng_decode_image(ctx, out, out_size, SPNG_FMT_RGBA8, 0);
+
+And another example of its usage in example.c is as follows:
+/* With SPNG_FMT_PNG indexed color images are output as palette indices,
+       pick another format to expand them. */
+    if(ihdr.color_type == SPNG_COLOR_TYPE_INDEXED) fmt = SPNG_FMT_RGB8;
+
+    ret = spng_decoded_image_size(ctx, fmt, &image_size);
+
+    if(ret) goto error;
+
+    image = malloc(image_size);
+
+    if(image == NULL) goto error;
+
+    /* Decode the image in one go */
+    /* ret = spng_decode_image(ctx, image, image_size, SPNG_FMT_RGBA8, 0);
+
+    if(ret)
+    {
+        printf("spng_decode_image() error: %s\n", spng_strerror(ret));
+        goto error;
+    }*/
+
+    /* Alternatively you can decode the image progressively,
+       this requires an initialization step. */
+    ret = spng_decode_image(ctx, NULL, 0, fmt, SPNG_DECODE_PROGRESSIVE);
+
+    if(ret)
+    {
+        printf("progressive spng_decode_image() error: %s\n", spng_strerror(ret));
+        goto error;
+    }

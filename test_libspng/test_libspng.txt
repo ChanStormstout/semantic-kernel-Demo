@@ -1,0 +1,96 @@
+[93mUser: 
+Generate a function called LLVMFuzzerTestOneInput, which accpets a `const uint8_t*` and a `size_t` parameter as the inputs, 
+and be able to invoke the function `spng_decode_image`.
+
+The information about `spng_decode_image` in the README.md is as follows:
+/* Decode to 8-bit RGBA */
+spng_decode_image(ctx, out, out_size, SPNG_FMT_RGBA8, 0);
+
+And another example of its usage in example.c is as follows:
+/* With SPNG_FMT_PNG indexed color images are output as palette indices,
+       pick another format to expand them. */
+    if(ihdr.color_type == SPNG_COLOR_TYPE_INDEXED) fmt = SPNG_FMT_RGB8;
+
+    ret = spng_decoded_image_size(ctx, fmt, &image_size);
+
+    if(ret) goto error;
+
+    image = malloc(image_size);
+
+    if(image == NULL) goto error;
+
+    /* Decode the image in one go */
+    /* ret = spng_decode_image(ctx, image, image_size, SPNG_FMT_RGBA8, 0);
+
+    if(ret)
+    {
+        printf("spng_decode_image() error: %s
+", spng_strerror(ret));
+        goto error;
+    }*/
+
+    /* Alternatively you can decode the image progressively,
+       this requires an initialization step. */
+    ret = spng_decode_image(ctx, NULL, 0, fmt, SPNG_DECODE_PROGRESSIVE);
+
+    if(ret)
+    {
+        printf("progressive spng_decode_image() error: %s
+", spng_strerror(ret));
+        goto error;
+    }
+[0m
+[32mChatBot: To generate a function called LLVMFuzzerTestOneInput that accepts a `const uint8_t*` and a `size_t` parameter and invokes the function `spng_decode_image`, you can use the following code:
+
+```c++
+#include <spng.h>
+
+void LLVMFuzzerTestOneInput(const uint8_t* input, size_t size) {
+    spng_ctx *ctx = spng_ctx_new(0);
+    if (!ctx) {
+        // handle error
+        return;
+    }
+    
+    // Set input data
+    spng_set_png_buffer(ctx, input, size);
+    
+    // Set output format
+    spng_format fmt = SPNG_FMT_RGBA8;
+    
+    // Get output size
+    size_t out_size;
+    int ret = spng_decoded_image_size(ctx, fmt, &out_size);
+    if (ret) {
+        // handle error
+        spng_ctx_free(ctx);
+        return;
+    }
+    
+    // Allocate memory for output
+    uint8_t *out = (uint8_t*)malloc(out_size);
+    if (!out) {
+        // handle error
+        spng_ctx_free(ctx);
+        return;
+    }
+    
+    // Decode the image
+    ret = spng_decode_image(ctx, out, out_size, fmt, 0);
+    if (ret) {
+        // handle error
+        free(out);
+        spng_ctx_free(ctx);
+        return;
+    }
+    
+    // Use the decoded image as needed
+    
+    // Clean up
+    free(out);
+    spng_ctx_free(ctx);
+}
+```
+
+Please note that you need to have the `libspng` library installed and linked to your project for this code to work.
+[0m
