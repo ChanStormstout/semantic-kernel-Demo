@@ -1,0 +1,33 @@
+draco_text1 = """
+Analyze the following code:
+StatusOr<std::unique_ptr<PointCloud>> Decoder::DecodePointCloudFromBuffer(
+    DecoderBuffer *in_buffer) {
+  DRACO_ASSIGN_OR_RETURN(EncodedGeometryType type,
+                         GetEncodedGeometryType(in_buffer))
+  if (type == POINT_CLOUD) {
+#ifdef DRACO_POINT_CLOUD_COMPRESSION_SUPPORTED
+    std::unique_ptr<PointCloud> point_cloud(new PointCloud());
+    DRACO_RETURN_IF_ERROR(DecodeBufferToGeometry(in_buffer, point_cloud.get()))
+    return std::move(point_cloud);
+#endif
+  } else if (type == TRIANGULAR_MESH) {
+#ifdef DRACO_MESH_COMPRESSION_SUPPORTED
+    std::unique_ptr<Mesh> mesh(new Mesh());
+    DRACO_RETURN_IF_ERROR(DecodeBufferToGeometry(in_buffer, mesh.get()))
+    return static_cast<std::unique_ptr<PointCloud>>(std::move(mesh));
+#endif
+  }
+  return Status(Status::DRACO_ERROR, "Unsupported geometry type.");
+}
+
+If you need the information about the funcition it invokes, here's some other related information:
+#define DRACO_ASSIGN_OR_RETURN(lhs, expression)                                \
+  DRACO_ASSIGN_OR_RETURN_IMPL_(DRACO_MACROS_IMPL_CONCAT_(_statusor, __LINE__), \
+                               lhs, expression, _status)                 
+"""
+
+draco_text2 = """
+Generate a function called LLVMFuzzerTestOneInput, which accpets a `const uint8_t*` and a `size_t` parameter as the inputs, 
+and be able to invoke the function `DecodePointCloudFromBuffer`.
+You may need to use `draco` as the namespace.
+"""

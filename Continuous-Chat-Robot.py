@@ -458,7 +458,287 @@ And another example of its usage in example.c is as follows:
     }
 """
 
+avahi_text1 = """
+Analyze the following code:
+AvahiKey* avahi_dns_packet_consume_key(AvahiDnsPacket *p, int *ret_unicast_response) {
+    char name[256];
+    uint16_t type, class;
+    AvahiKey *k;
 
+    assert(p);
+
+    if (avahi_dns_packet_consume_name(p, name, sizeof(name)) < 0 ||
+        avahi_dns_packet_consume_uint16(p, &type) < 0 ||
+        avahi_dns_packet_consume_uint16(p, &class) < 0)
+        return NULL;
+
+    if (ret_unicast_response)
+        *ret_unicast_response = !!(class & AVAHI_DNS_UNICAST_RESPONSE);
+
+    class &= ~AVAHI_DNS_UNICAST_RESPONSE;
+
+    if (!(k = avahi_key_new(name, class, type)))
+        return NULL;
+
+    if (!avahi_key_is_valid(k)) {
+        avahi_key_unref(k);
+        return NULL;
+    }
+
+    return k;
+}
+"""
+avahi_text2 = """
+Generate a function called LLVMFuzzerTestOneInput,which accpets a `const uint8_t*` (called data)and a `size_t` parameter as the inputs, 
+and be able to invoke the function `avahi_dns_packet_consume_key()`;
+other information:
+#define AVAHI_DNS_PACKET_DATA(p) ((p)->data ? (p)->data : ((uint8_t*) p) + sizeof(AvahiDnsPacket))
+
+Due to the fact that the input may not be as the same type as the input parameter, you may need to use memcpy and AVAHI_DNS_PACKET_DATA to transform the data variable to the packet.
+"""
+
+gpac_text1 = """
+Analyze the following code:
+//Create and parse the movie for READ - EDIT only
+GF_ISOFile *gf_isom_open_file(const char *fileName, GF_ISOOpenMode OpenMode, const char *tmp_dir)
+{
+	GF_Err e;
+	u64 bytes;
+	GF_ISOFile *mov = gf_isom_new_movie();
+	if (!mov || !fileName) return NULL;
+
+	mov->fileName = gf_strdup(fileName);
+	mov->openMode = OpenMode;
+
+#ifndef	GPAC_DISABLE_ISOM_FRAGMENTS
+	if (OpenMode==GF_ISOM_OPEN_READ_DUMP)
+		mov->store_traf_map = GF_TRUE;
+#endif
+
+	if ( (OpenMode == GF_ISOM_OPEN_READ) || (OpenMode == GF_ISOM_OPEN_READ_DUMP) || (OpenMode == GF_ISOM_OPEN_READ_EDIT) ) {
+		if (OpenMode == GF_ISOM_OPEN_READ_EDIT) {
+			mov->openMode = GF_ISOM_OPEN_READ_EDIT;
+
+#ifndef	GPAC_DISABLE_ISOM_WRITE
+			// create a memory edit map in case we add samples, typically during import
+			e = gf_isom_datamap_new(NULL, tmp_dir, GF_ISOM_DATA_MAP_WRITE, & mov->editFileMap);
+#else
+			e = GF_NOT_SUPPORTED;
+#endif
+			if (e) {
+				gf_isom_set_last_error(NULL, e);
+				gf_isom_delete_movie(mov);
+				return NULL;
+			}
+		} else {
+			mov->openMode = GF_ISOM_OPEN_READ;
+		}
+		mov->es_id_default_sync = -1;
+		//for open, we do it the regular way and let the GF_DataMap assign the appropriate struct
+		//this can be FILE (the only one supported...) as well as remote
+		//(HTTP, ...),not suported yet
+		//the bitstream IS PART OF the GF_DataMap
+		//as this is read-only, use a FileMapping. this is the only place where
+		//we use file mapping
+		e = gf_isom_datamap_new(fileName, NULL, GF_ISOM_DATA_MAP_READ_ONLY, &mov->movieFileMap);
+		if (e) {
+			gf_isom_set_last_error(NULL, e);
+			gf_isom_delete_movie(mov);
+			return NULL;
+		}
+
+		if (OpenMode == GF_ISOM_OPEN_READ_DUMP) {
+			mov->FragmentsFlags |= GF_ISOM_FRAG_READ_DEBUG;
+		}
+	} else {
+
+#ifdef GPAC_DISABLE_ISOM_WRITE
+		//not allowed for READ_ONLY lib
+		gf_isom_delete_movie(mov);
+		gf_isom_set_last_error(NULL, GF_ISOM_INVALID_MODE);
+		return NULL;
+
+#else
+
+		//set a default output name for edited file
+		mov->finalName = (char*)gf_malloc(strlen(fileName) + 5);
+		if (!mov->finalName) {
+			gf_isom_set_last_error(NULL, GF_OUT_OF_MEM);
+			gf_isom_delete_movie(mov);
+			return NULL;
+		}
+		strcpy(mov->finalName, "out_");
+		strcat(mov->finalName, fileName);
+
+		//open the original file with edit tag
+		e = gf_isom_datamap_new(fileName, NULL, GF_ISOM_DATA_MAP_EDIT, &mov->movieFileMap);
+		//if the file doesn't exist, we assume it's wanted and create one from scratch
+		if (e) {
+			gf_isom_set_last_error(NULL, e);
+			gf_isom_delete_movie(mov);
+			return NULL;
+		}
+		//and create a temp fileName for the edit
+		e = gf_isom_datamap_new("_gpac_isobmff_tmp_edit", tmp_dir, GF_ISOM_DATA_MAP_WRITE, & mov->editFileMap);
+		if (e) {
+			gf_isom_set_last_error(NULL, e);
+			gf_isom_delete_movie(mov);
+			return NULL;
+		}
+
+		mov->es_id_default_sync = -1;
+
+#endif
+	}
+
+	//OK, let's parse the movie...
+	mov->LastError = gf_isom_parse_movie_boxes(mov, NULL, &bytes, 0);
+	if (((OpenMode & 0xFF) == GF_ISOM_OPEN_READ_DUMP) && (mov->LastError==GF_ISOM_INCOMPLETE_FILE))
+		mov->LastError = GF_OK;
+
+#if 0
+	if (!mov->LastError && (OpenMode == GF_ISOM_OPEN_CAT_FRAGMENTS)) {
+		gf_isom_datamap_del(mov->movieFileMap);
+		/*reopen the movie file map in cat mode*/
+		mov->LastError = gf_isom_datamap_new(fileName, tmp_dir, GF_ISOM_DATA_MAP_CAT, & mov->movieFileMap);
+	}
+#endif
+
+	if (mov->LastError) {
+		gf_isom_set_last_error(NULL, mov->LastError);
+		gf_isom_delete_movie(mov);
+		return NULL;
+	}
+
+	mov->nb_box_init_seg = gf_list_count(mov->TopBoxes);
+	return mov;
+}
+"""
+
+gpac_text2 = """
+Generate a function called LLVMFuzzerTestOneInput, which accpets a `const uint8_t*` and a `size_t` parameter as the inputs, 
+and be able to invoke the function `gf_isom_open_file`.
+"""
+
+draco_text1 = """
+Analyze the following code:
+StatusOr<std::unique_ptr<PointCloud>> Decoder::DecodePointCloudFromBuffer(
+    DecoderBuffer *in_buffer) {
+  DRACO_ASSIGN_OR_RETURN(EncodedGeometryType type,
+                         GetEncodedGeometryType(in_buffer))
+  if (type == POINT_CLOUD) {
+#ifdef DRACO_POINT_CLOUD_COMPRESSION_SUPPORTED
+    std::unique_ptr<PointCloud> point_cloud(new PointCloud());
+    DRACO_RETURN_IF_ERROR(DecodeBufferToGeometry(in_buffer, point_cloud.get()))
+    return std::move(point_cloud);
+#endif
+  } else if (type == TRIANGULAR_MESH) {
+#ifdef DRACO_MESH_COMPRESSION_SUPPORTED
+    std::unique_ptr<Mesh> mesh(new Mesh());
+    DRACO_RETURN_IF_ERROR(DecodeBufferToGeometry(in_buffer, mesh.get()))
+    return static_cast<std::unique_ptr<PointCloud>>(std::move(mesh));
+#endif
+  }
+  return Status(Status::DRACO_ERROR, "Unsupported geometry type.");
+}
+
+If you need the information about the funcition it invokes, here's some other related information:
+#define DRACO_ASSIGN_OR_RETURN(lhs, expression)                                \
+  DRACO_ASSIGN_OR_RETURN_IMPL_(DRACO_MACROS_IMPL_CONCAT_(_statusor, __LINE__), \
+                               lhs, expression, _status)                 
+"""
+
+draco_text2 = """
+Generate a function called LLVMFuzzerTestOneInput, which accpets a `const uint8_t*` and a `size_t` parameter as the inputs, 
+and be able to invoke the function `DecodePointCloudFromBuffer`.
+You may need to use `draco` as the namespace.
+"""
+
+glog_text1 = """
+Analyze the following code (a code snippet of the repo `glog`):
+
+// The demangler entry point.
+bool Demangle(const char *mangled, char *out, size_t out_size) {
+#if defined(GLOG_OS_WINDOWS)
+#if defined(HAVE_DBGHELP)
+  // When built with incremental linking, the Windows debugger
+  // library provides a more complicated `Symbol->Name` with the
+  // Incremental Linking Table offset, which looks like
+  // `@ILT+1105(?func@Foo@@SAXH@Z)`. However, the demangler expects
+  // only the mangled symbol, `?func@Foo@@SAXH@Z`. Fortunately, the
+  // mangled symbol is guaranteed not to have parentheses,
+  // so we search for `(` and extract up to `)`.
+  //
+  // Since we may be in a signal handler here, we cannot use `std::string`.
+  char buffer[1024];  // Big enough for a sane symbol.
+  const char *lparen = strchr(mangled, '(');
+  if (lparen) {
+    // Extract the string `(?...)`
+    const char *rparen = strchr(lparen, ')');
+    size_t length = static_cast<size_t>(rparen - lparen) - 1;
+    strncpy(buffer, lparen + 1, length);
+    buffer[length] = '\0';
+    mangled = buffer;
+  } // Else the symbol wasn't inside a set of parentheses
+  // We use the ANSI version to ensure the string type is always `char *`.
+  return UnDecorateSymbolName(mangled, out, out_size, UNDNAME_COMPLETE);
+#else
+  (void)mangled;
+  (void)out;
+  (void)out_size;
+  return false;
+#endif
+#else
+  State state;
+  InitState(&state, mangled, out, out_size);
+  return ParseTopLevelMangledName(&state) && !state.overflowed;
+#endif
+}
+"""
+
+glog_text2 = """
+Generate a function called LLVMFuzzerTestOneInput, which accpets a `const unsigned char *` type variable called `data` and a `unsigned` type variable called `Size` as the parameter of the inputs, 
+and be able to invoke the function `Demangle`.
+"""
+
+brpc_text1 = """
+Analyze the following code (which is a codesnippet of `brpc`):
+ssize_t HttpMessage::ParseFromArray(const char *data, const size_t length) {
+    if (Completed()) {
+        if (length == 0) {
+            return 0;
+        }
+        LOG(ERROR) << "Append data(len=" << length
+                   << ") to already-completed message";
+        return -1;
+    }
+    const size_t nprocessed =
+        http_parser_execute(&_parser, &g_parser_settings, data, length);
+    if (_parser.http_errno != 0) {
+        // May try HTTP on other formats, failure is norm.
+        RPC_VLOG << "Fail to parse http message, parser=" << _parser
+                 << ", buf=`" << butil::StringPiece(data, length) << '\'';
+        return -1;
+    } 
+    _parsed_length += nprocessed;
+    return nprocessed;
+}
+
+related information:
+bool Completed() const { return _stage == HTTP_ON_MESSAGE_COMPLETE; }
+
+/* Executes the parser. Returns number of parsed bytes. Sets
+ * `parser->http_errno` on error. */
+size_t http_parser_execute (http_parser *parser,
+                            const http_parser_settings *settings,
+                            const char *data,
+                            size_t len);
+"""
+
+brpc_text2 = """
+Generate a function called LLVMFuzzerTestOneInput, which accpets a `const uint8_t*` and a `size_t` parameter as the inputs, 
+and be able to invoke `brpc::HttpMessage`'s method `ParseFromArray`.
+"""
 # define async function
 async def chat(input_text: str) -> None:
     # Save new message in the context variables
@@ -479,8 +759,8 @@ async def main():
     # user_input2 = input("input2: ")
     # user_input3 = input("input3: ")
     # user_input4 = input("input4: ")
-    await chat(libspng_text1)
-    # await chat(libspng_text2)
+    await chat(brpc_text1)
+    await chat(brpc_text2)
     #await chat(user_input2)
     #await chat(user_input3)
     #await chat(user_input4)

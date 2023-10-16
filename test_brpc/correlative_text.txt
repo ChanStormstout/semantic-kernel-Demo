@@ -1,0 +1,38 @@
+brpc_text1 = """
+Analyze the following code (which is a codesnippet of `brpc`):
+ssize_t HttpMessage::ParseFromArray(const char *data, const size_t length) {
+    if (Completed()) {
+        if (length == 0) {
+            return 0;
+        }
+        LOG(ERROR) << "Append data(len=" << length
+                   << ") to already-completed message";
+        return -1;
+    }
+    const size_t nprocessed =
+        http_parser_execute(&_parser, &g_parser_settings, data, length);
+    if (_parser.http_errno != 0) {
+        // May try HTTP on other formats, failure is norm.
+        RPC_VLOG << "Fail to parse http message, parser=" << _parser
+                 << ", buf=`" << butil::StringPiece(data, length) << '\'';
+        return -1;
+    } 
+    _parsed_length += nprocessed;
+    return nprocessed;
+}
+
+related information:
+bool Completed() const { return _stage == HTTP_ON_MESSAGE_COMPLETE; }
+
+/* Executes the parser. Returns number of parsed bytes. Sets
+ * `parser->http_errno` on error. */
+size_t http_parser_execute (http_parser *parser,
+                            const http_parser_settings *settings,
+                            const char *data,
+                            size_t len);
+"""
+
+brpc_text2 = """
+Generate a function called LLVMFuzzerTestOneInput, which accpets a `const uint8_t*` and a `size_t` parameter as the inputs, 
+and be able to invoke `brpc::HttpMessage`'s method `ParseFromArray`.
+"""

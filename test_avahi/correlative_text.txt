@@ -1,0 +1,38 @@
+avahi_text1 = """
+Analyze the following code:
+AvahiKey* avahi_dns_packet_consume_key(AvahiDnsPacket *p, int *ret_unicast_response) {
+    char name[256];
+    uint16_t type, class;
+    AvahiKey *k;
+
+    assert(p);
+
+    if (avahi_dns_packet_consume_name(p, name, sizeof(name)) < 0 ||
+        avahi_dns_packet_consume_uint16(p, &type) < 0 ||
+        avahi_dns_packet_consume_uint16(p, &class) < 0)
+        return NULL;
+
+    if (ret_unicast_response)
+        *ret_unicast_response = !!(class & AVAHI_DNS_UNICAST_RESPONSE);
+
+    class &= ~AVAHI_DNS_UNICAST_RESPONSE;
+
+    if (!(k = avahi_key_new(name, class, type)))
+        return NULL;
+
+    if (!avahi_key_is_valid(k)) {
+        avahi_key_unref(k);
+        return NULL;
+    }
+
+    return k;
+}
+"""
+avahi_text2 = """
+Generate a function called LLVMFuzzerTestOneInput,which accpets a `const uint8_t*` (called data)and a `size_t` parameter as the inputs, 
+and be able to invoke the function `avahi_dns_packet_consume_key()`;
+other information:
+#define AVAHI_DNS_PACKET_DATA(p) ((p)->data ? (p)->data : ((uint8_t*) p) + sizeof(AvahiDnsPacket))
+
+Due to the fact that the input may not be as the same type as the input parameter, you may need to use memcpy and AVAHI_DNS_PACKET_DATA to transform the data variable to the packet.
+"""
