@@ -489,6 +489,46 @@ AvahiKey* avahi_dns_packet_consume_key(AvahiDnsPacket *p, int *ret_unicast_respo
 }
 """
 avahi_text2 = """
+Here are some other code snippets from the same project:
+
+#define AVAHI_DNS_PACKET_EXTRA_SIZE 48
+
+AvahiDnsPacket* avahi_dns_packet_new(unsigned mtu) {
+    AvahiDnsPacket *p;
+    size_t max_size;
+
+    if (mtu <= 0)
+        max_size = AVAHI_DNS_PACKET_SIZE_MAX;
+    else if (mtu >= AVAHI_DNS_PACKET_EXTRA_SIZE)
+        max_size = mtu - AVAHI_DNS_PACKET_EXTRA_SIZE;
+    else
+        max_size = 0;
+
+    if (max_size < AVAHI_DNS_PACKET_HEADER_SIZE)
+        max_size = AVAHI_DNS_PACKET_HEADER_SIZE;
+
+    if (!(p = avahi_malloc(sizeof(AvahiDnsPacket) + max_size)))
+        return p;
+
+    p->size = p->rindex = AVAHI_DNS_PACKET_HEADER_SIZE;
+    p->max_size = max_size;
+    p->res_size = 0;
+    p->name_table = NULL;
+    p->data = NULL;
+
+    memset(AVAHI_DNS_PACKET_DATA(p), 0, p->size);
+    return p;
+}
+
+void avahi_dns_packet_free(AvahiDnsPacket *p) {
+    assert(p);
+
+    if (p->name_table)
+        avahi_hashmap_free(p->name_table);
+
+    avahi_free(p);
+}
+
 Generate a function called LLVMFuzzerTestOneInput,which accpets a `const uint8_t*` (called data)and a `size_t` parameter as the inputs, 
 and be able to invoke the function `avahi_dns_packet_consume_key()`;
 other information:
@@ -759,8 +799,8 @@ async def main():
     # user_input2 = input("input2: ")
     # user_input3 = input("input3: ")
     # user_input4 = input("input4: ")
-    await chat(brpc_text1)
-    await chat(brpc_text2)
+    await chat(avahi_text1)
+    await chat(avahi_text2)
     #await chat(user_input2)
     #await chat(user_input3)
     #await chat(user_input4)
