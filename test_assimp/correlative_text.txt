@@ -1,0 +1,67 @@
+assimp_text1 = """
+Analyze the following code:
+const aiScene* Importer::ReadFileFromMemory(const void* pBuffer, size_t pLength, unsigned int pFlags, const char* pHint ) {
+    ai_assert(nullptr != pimpl);
+
+    IOSystem* io = pimpl->mIOHandler;
+    try {
+        if (pHint == nullptr) {
+            pHint = "";
+        }
+        if (!pBuffer || !pLength || strlen(pHint) > MaxLenHint ) {
+            pimpl->mErrorString = "Invalid parameters passed to ReadFileFromMemory()";
+            return nullptr;
+        }
+        // prevent deletion of the previous IOHandler
+        pimpl->mIOHandler = nullptr;
+
+        SetIOHandler(new MemoryIOSystem((const uint8_t*)pBuffer,pLength,io));
+
+        // read the file and recover the previous IOSystem
+        static const size_t BufSize(Importer::MaxLenHint + 28);
+        char fbuff[BufSize];
+        ai_snprintf(fbuff, BufSize, "%s.%s",AI_MEMORYIO_MAGIC_FILENAME,pHint);
+
+        ReadFile(fbuff,pFlags);
+        SetIOHandler(io);
+    } catch(const DeadlyImportError &e) {
+        pimpl->mErrorString = e.what();
+        pimpl->mException = std::current_exception();
+        SetIOHandler(io);
+        return ExceptionSwallower<const aiScene*>()();                                                                                                    \
+    } catch(...) {
+        pimpl->mErrorString = "Unknown exception";
+        pimpl->mException = std::current_exception();
+        SetIOHandler(io);
+        return ExceptionSwallower<const aiScene*>()();                                                                                                    \
+
+    }
+
+    return pimpl->mScene;
+}
+"""
+
+assimp_text2 = """
+Generate a function called LLVMFuzzerTestOneInput, which accpets a `const uint8_t*` and a `size_t` parameter as the inputs, 
+and be able to invoke `ASSIMP_API::Importer`'s method `ReadFileFromMemory`. 
+
+Some code snippets from the other files in the repo is offered as follows:#define aiProcessPreset_TargetRealtime_Quality ( \
+    aiProcess_CalcTangentSpace              |  \
+    aiProcess_GenSmoothNormals              |  \
+    aiProcess_JoinIdenticalVertices         |  \
+    aiProcess_ImproveCacheLocality          |  \
+    aiProcess_LimitBoneWeights              |  \
+    aiProcess_RemoveRedundantMaterials      |  \
+    aiProcess_SplitLargeMeshes              |  \
+    aiProcess_Triangulate                   |  \
+    aiProcess_GenUVCoords                   |  \
+    aiProcess_SortByPType                   |  \
+    aiProcess_FindDegenerates               |  \
+    aiProcess_FindInvalidData               |  \
+    0 )
+
+inline const aiExportDataBlob *Exporter::ExportToBlob(const aiScene *pScene, const std::string &pFormatId,
+        unsigned int pPreprocessing, const ExportProperties *pProperties) {
+    return ExportToBlob(pScene, pFormatId.c_str(), pPreprocessing, pProperties);
+}
+"""
