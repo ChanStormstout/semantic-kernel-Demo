@@ -2,8 +2,10 @@ import re
 from KnowledgeReceiverBase import KnowledgeBase
 
 class KnowledgeReceiver(KnowledgeBase):
-    def __init__(self) -> None:
-        self._extract_knowledge_func = None
+    def __init__(self):
+        self.document_content = ""
+        self.source_code = ""
+        self.use_case = ""
 
     @property
     def extract_knowledge(self):
@@ -20,11 +22,11 @@ class KnowledgeReceiver(KnowledgeBase):
     def _create_summary(self, text):
         return text[:100]
 
-    def receive_source_code(self, source_code: str):
-        return self.receive_source_code(source_code)
+    def receive_document(self):
+        self.document_content = input("请输入文档内容: ")
+
+    def receive_source_code(self):
+        self.source_code = input("请输入源代码: ")
     
-    def receive_document(self, document_content: str):
-        return self.receive_document(document_content)
-    
-    def receive_use_case(self, use_case: str):
-        return self.receive_use_case(use_case)
+    def receive_use_case(self):
+        self.use_case = input("请输入使用案例: ")

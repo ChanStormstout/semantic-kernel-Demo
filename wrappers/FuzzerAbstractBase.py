@@ -11,8 +11,8 @@ class FuzzerAbstractBase(ABC):
     def fuzzer_set_up(self, language_tpye):
         pass
 
-    @abstractmethod
-    def fuzzer_knowledge(self, KnowledgeBase):
-        raise NotImplementedError
+    # @abstractmethod
+    # def fuzzer_knowledge(self, KnowledgeBase):
+    #     raise NotImplementedError
 
 

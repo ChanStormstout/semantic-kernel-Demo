@@ -17,16 +17,22 @@ class KnowledgeBase(ABC):
     def func_summarizer(self, text):
         """Abstract method to summarize a piece of text."""
         pass
-    
+
     @abstractmethod    
     def receive_source_code(self, source_code: str):
         """Receive and process the source code."""
         pass
-
+    
+    @property
     @abstractmethod
-    def receive_document(self, document_content: str):
+    def receive_document(self):
         """Receive and process the related documents' content"""
         pass
+    @receive_document.setter
+    @abstractmethod
+    def receive_document(self, document_content: str):
+        pass
+
     
     @abstractmethod
     def receive_use_case(self, use_case: str):        
