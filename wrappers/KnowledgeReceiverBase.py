@@ -33,8 +33,23 @@ class KnowledgeBase(ABC):
     def receive_document(self, document_content: str):
         pass
 
-    
+    @property
+    @abstractmethod
+    def receive_use_case(self):
+        """Receive and process the use case of the function"""
+        pass
+    @receive_use_case.setter
     @abstractmethod
     def receive_use_case(self, use_case: str):        
-        """Receive and process the use case of the function"""
+        pass
+
+# TODO: add the dependency info
+    @property
+    @abstractmethod
+    def dependencies(self):
+        """Extract the information of dependencies"""
+        pass
+    @dependencies.setter
+    @abstractmethod
+    def get_dependencies(self, dep_info: str):
         pass
