@@ -46,10 +46,10 @@ class KnowledgeBase(ABC):
 # TODO: add the dependency info
     @property
     @abstractmethod
-    def dependencies(self):
+    def get_dependencies(self):
         """Extract the information of dependencies"""
         pass
-    @dependencies.setter
+    @get_dependencies.setter
     @abstractmethod
     def get_dependencies(self, dep_info: str):
         pass

@@ -7,6 +7,7 @@ class KnowledgeReceiver(KnowledgeBase):
         self.document_content = ""
         self.source_code = ""
         self.use_case = ""
+        self.dependencies = ""
 
     @property
     def extract_knowledge(self):
@@ -34,4 +35,4 @@ class KnowledgeReceiver(KnowledgeBase):
     
     # TODO: extract the information of dependencies
     def get_dependencies(self):
-        self.dependencies = extract_info.extract_dependencies_from_file()
+        self.dependencies = extract_info.get_dependencies('testsuite.c')
