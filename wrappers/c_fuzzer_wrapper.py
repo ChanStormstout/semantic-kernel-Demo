@@ -22,10 +22,8 @@ class CFuzzerWrapper(FuzzerAbstractBase):
         self.knowledge_receiver.receive_document()
         self.knowledge_receiver.receive_source_code()
         self.knowledge_receiver.receive_use_case()
+        self.knowledge_receiver.get_dependencies()
         # ... 处理收集到的知识数据 ...
 
-    # 下面创建一个CFuzzerWrapper实例并传递知识
-c_fuzzer = CFuzzerWrapper(language_type='C/C++')
-c_fuzzer.collect_knowledge()
-print(c_fuzzer.knowledge_receiver.document_content)
+
 

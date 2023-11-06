@@ -46,19 +46,18 @@ def extract_dependencies_from_file(dot_content, target_file):
     # Return the sorted list of dependencies
     return sorted(seen_dependencies)
 
-def get_dependencies():
+def get_dependencies(target_file):
     with open('output.dot', 'r') as file:
         dot_file_content = file.read()
-    # Specify the file you want to extract dependencies for
-    target_file = 'bthread.cpp'
+
     #Extract the dependencies
-    dependency_info = extract_dependencies_from_file(dot_file_content, target_file)
+    # dependency_info = extract_dependencies_from_file(dot_file_content, filename)
 
     # print(f"Dependencies for {target_file}:")
     # for dep in dependency_info:
     #     print(dep)
 
-    testsuite_dependencies = extract_dependencies_from_file(dot_file_content, 'testsuite.c')
+    testsuite_dependencies = extract_dependencies_from_file(dot_file_content, target_file)
     # Print the dependencies
     print("All dependencies of 'testsuite.c':")
     for dep in testsuite_dependencies:
