@@ -3,28 +3,29 @@ import extract_info
 from KnowledgeReceiverBase import KnowledgeBase
 
 class KnowledgeReceiver(KnowledgeBase):
-    def __init__(self):
-        self.document_content = ""
-        self.source_code = ""
-        self.use_case = ""
+    def __init__(self, doc_file, source_code_file, use_case_file):
+        self.document_content = self._read_file(doc_file)
+        self.source_code = self._read_file(source_code_file)
+        self.use_case = self._read_file(use_case_file)
         self.dependencies = ""
 
-    @property
-    def extract_knowledge(self):
-        return self._extract_knowledge_func
-    
-    @extract_knowledge.setter
-    def extract_knowledge(self, func_info):
-        self._extract_knowledge_func = func_info
+    # Add the _read_file method here
+    def _read_file(self, file_path):
+        try:
+            with open(file_path, 'r') as file:
+                return file.read()
+        except FileNotFoundError:
+            print(f"File not found: {file_path}")
+            return ""
 
-    def receive_document(self):
-        self.document_content = input("请输入文档内容: ")
+    # def receive_document(self, text: str):
+    #     self.document_content = input("请输入文档内容: ")
 
-    def receive_source_code(self):
-        self.source_code = input("请输入源代码: ")
+    # def receive_source_code(self, source_code: str):
+    #     self.source_code = source_code
     
-    def receive_use_case(self):
-        self.use_case = input("请输入使用案例: ")
+    # def receive_use_case(self, use_case: str):
+    #     self.use_case = use_case
     
     # todo: _create_summary should use SK framework to return the summary of target function.
     def func_summarizer(self):

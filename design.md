@@ -6,3 +6,6 @@ Step 3: Ask the llm to generate a function that can accept the specific type of 
 # To add
 1. prompt perfect
 2. 
+
+# framework
+driver -> binary -> gdb -> line of the error -> modify the old driver [LLM] -> new driver -> new loop 

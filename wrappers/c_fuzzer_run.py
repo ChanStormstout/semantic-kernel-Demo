@@ -10,8 +10,11 @@ async def main():
     c_fuzzer = CFuzzerWrapper(language_type='C/C++')
     c_fuzzer.collect_knowledge()
 
-    print(c_fuzzer.knowledge_receiver.document_content)
+    # test-code
+    # print(c_fuzzer.knowledge_receiver.document_content)
     await(call_LLM(c_fuzzer.knowledge_receiver.document_content))
+    await(call_LLM(c_fuzzer.knowledge_receiver.source_code))
+    await(call_LLM(c_fuzzer.knowledge_receiver.use_case))
     
 
 if __name__ == "__main__":
