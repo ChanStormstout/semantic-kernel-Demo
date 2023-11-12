@@ -8,7 +8,7 @@ use_case_prompt = "Please accept cases that call the target function within the 
 document_prompt = "Please receive the following related document: \n"
 generate_prompt = """Generate a function called LLVMFuzzerTestOneInput, which accpets a `const uint8_t*` (called data) and a `size_t` parameter as the inputs, 
                     and be able to invoke the function """
-generate_prompt_suffix =  "Please note that you can only give me the code without any expalain."
+generate_prompt_suffix =  "Please note that you can just only give me the code without any other words."
 async def call_LLM(prompts):
     await generate(prompts)
 
