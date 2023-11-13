@@ -16,6 +16,3 @@ def compile_project(compile_commands_file):
             print(f"Compiled: {command['file']}")
         except subprocess.CalledProcessError as e:
             print(f"Error compiling {command['file']}: {e}")
-
-compile_commands_file = '/home/victor/workspace/fuzzing_target_repo/gpac/compile_commands.json'  # 设置文件路径
-compile_project(compile_commands_file)
