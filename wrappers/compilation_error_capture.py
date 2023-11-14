@@ -1,7 +1,7 @@
 import subprocess
 
 def compile_and_link(source_file, object_files, output_executable):
-    compile_command = ["gcc", "-o", output_executable, source_file] + object_files
+    compile_command = ["clang", "-g", "-o", output_executable, source_file] + object_files
     try:
         subprocess.run(compile_command, check=True)
     except subprocess.CalledProcessError as e:
