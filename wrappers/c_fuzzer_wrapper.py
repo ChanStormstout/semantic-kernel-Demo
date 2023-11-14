@@ -5,6 +5,7 @@ from knowledge_receiver import KnowledgeReceiver
 
 class CFuzzerWrapper(FuzzerAbstractBase):
     def __init__(self, language_type):
+        super().__init__()
         self._language_type = language_type
         # An instance of creating a knowledge receiver
         self.knowledge_receiver = KnowledgeReceiver(doc_file='/home/victor/workspace/semantic-kernel-Demo/wrappers/document.txt', 
@@ -27,12 +28,11 @@ class CFuzzerWrapper(FuzzerAbstractBase):
 
     @property
     def target_function(self):
+        """ 获取目标函数的值 """
         return self._target_function
 
     @target_function.setter
     def target_function(self, value):
+        """ 设置目标函数的值 """
+        # 这里可以添加逻辑来验证或处理输入值
         self._target_function = value
-        
-    def set_target_function_from_input(self):
-        user_input = input("Please enter the target function: ")
-        self.target_function = user_input

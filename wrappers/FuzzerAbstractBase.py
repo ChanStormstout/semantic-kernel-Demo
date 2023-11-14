@@ -20,5 +20,5 @@ class FuzzerAbstractBase(ABC):
 
     @target_function.setter
     @abstractmethod
-    def target_function(self, func_name):
+    def target_function(self, value):
         pass
