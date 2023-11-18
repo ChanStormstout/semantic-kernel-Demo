@@ -1,67 +1,43 @@
 import re
-import semantic_kernel as sk
-from semantic_kernel.connectors.ai.open_ai import OpenAIChatCompletion, AzureChatCompletion
-
-kernel = sk.Kernel()
-# Configure AI service used by the kernel
-api_key, org_id = sk.openai_settings_from_dot_env()
-kernel.add_chat_service("chat-gpt", OpenAIChatCompletion("gpt-3.5-turbo", api_key, org_id))
-search_term = "search_content"
 
 def extract_dependencies_from_file(dot_content, target_file):
     """
-    Recursively extract all dependencies for a given file from the DOT file content.
+    Extract all dependency lines for a given file from the DOT file content.
     
     :param dot_content: A string containing the contents of the DOT file.
     :param target_file: The file name of which to find the dependencies.
-    :return: A set of all dependencies for the target file, including indirect dependencies.
+    :return: A list of all dependency lines for the target file.
     """
-    pattern = re.compile(r'"([^"]+)" -> "([^"]+)"')
+    pattern = re.compile(r'("([^"]+)" -> "([^"]+)")')
     # Find all matches of the pattern in the DOT content
-    edges = pattern.findall(dot_content)
+    all_edges = pattern.findall(dot_content)
 
-    # Build a dependency graph
-    dependency_graph = {}
-    for source, target in edges:
-        if source in dependency_graph:
-            dependency_graph[source].add(target)
-        else:
-            dependency_graph[source] = {target}
+    # Filter edges that involve the target file
+    relevant_edges = [match[0] for match in all_edges if target_file in match[1:]]
 
-    # Recursive function to find dependencies
-    def find_dependencies(file, graph, seen):
-        if file in seen:
-            return
-        seen.add(file)
-        for dependency in graph.get(file, []):
-            find_dependencies(dependency, graph, seen)
-
-    # Initialize the set to store all dependencies
-    seen_dependencies = set()
-    # Start the recursive search for dependencies
-    find_dependencies(target_file, dependency_graph, seen_dependencies)
-    # Remove the target file from the set of dependencies
-    seen_dependencies.discard(target_file)
-
-    # Return the sorted list of dependencies
-    return sorted(seen_dependencies)
+    # Return the list of relevant dependency lines
+    return relevant_edges
 
 def get_dependencies(target_file):
     with open('output.dot', 'r') as file:
         dot_file_content = file.read()
+        return extract_dependencies_from_file(dot_file_content, target_file)
 
-    #Extract the dependencies
-    # dependency_info = extract_dependencies_from_file(dot_file_content, filename)
+def read_file(file_path):
+    """
+    Reads the content of a C file and stores it in a string variable.
 
-    # print(f"Dependencies for {target_file}:")
-    # for dep in dependency_info:
-    #     print(dep)
+    :param file_path: Path to the C file.
+    :return: A string containing the content of the file.
+    """
+    try:
+        with open(file_path, 'r') as file:
+            content = file.read()
+            return content
+    except IOError as e:
+        print(f"Error reading file: {e}")
+        return None
 
-    testsuite_dependencies = extract_dependencies_from_file(dot_file_content, target_file)
-    # Print the dependencies
-    print("All dependencies of 'testsuite.c':")
-    for dep in testsuite_dependencies:
-        print(dep)
-
-
-
+# Example usage
+# dependencies = get_dependencies("ares_create_query.c")
+# print(dependencies)
