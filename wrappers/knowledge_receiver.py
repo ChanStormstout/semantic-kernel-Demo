@@ -36,4 +36,4 @@ class KnowledgeReceiver(KnowledgeBase):
     
     # TODO: extract the information of dependencies
     def get_dependencies(self):
-        self.dependencies = extract_info.get_dependencies('testsuite.c')
+        self.dependencies = extract_info.get_dependencies('ares_create_query.c')
