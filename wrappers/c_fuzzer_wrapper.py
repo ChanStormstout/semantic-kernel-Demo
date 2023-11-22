@@ -8,9 +8,9 @@ class CFuzzerWrapper(FuzzerAbstractBase):
         super().__init__()
         self._language_type = language_type
         # An instance of creating a knowledge receiver
-        self.knowledge_receiver = KnowledgeReceiver(doc_file='/home/victor/workspace/semantic-kernel-Demo/wrappers/document.txt', 
-                                                    source_code_file='/home/victor/workspace/semantic-kernel-Demo/wrappers/source_code.txt', 
-                                                    use_case_file='/home/victor/workspace/semantic-kernel-Demo/wrappers/use_case.txt')
+        self.knowledge_receiver = KnowledgeReceiver(doc_file='/home/victor/workspace/semantic-kernel-Demo/function_information/document.txt', 
+                                                    source_code_file='/home/victor/workspace/semantic-kernel-Demo/function_information/source_code.txt', 
+                                                    use_case_file='/home/victor/workspace/semantic-kernel-Demo/function_information/use_case.txt')
         self._target_function = None
 
     @property

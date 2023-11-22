@@ -1,0 +1,6 @@
+{
+    "target_function" : "DecodePointCloudFromBuffer",
+    "source_code_file" : "decode.cc",
+    "lib_path" : "/home/victor/workspace/fuzzing_target_repo/draco/build_dir/libdraco.a",
+    "compile_json_path" : "/home/victor/workspace/fuzzing_target_repo/draco/build_dir/compile_commands.json"
+}

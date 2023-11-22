@@ -7,3 +7,7 @@ def capture_bt():
     with open("backtrace.log", "r") as file:
         backtrace_info = file.read()
         print(backtrace_info)
+    
+    return backtrace_info
+
+# print(capture_bt())

@@ -1,5 +1,6 @@
 import re
 import extract_info
+import json
 from KnowledgeReceiverBase import KnowledgeBase
 
 class KnowledgeReceiver(KnowledgeBase):
@@ -35,5 +36,10 @@ class KnowledgeReceiver(KnowledgeBase):
         return text[:100]
     
     # TODO: extract the information of dependencies
+    
     def get_dependencies(self):
-        self.dependencies = extract_info.get_dependencies('ares_create_query.c')
+        with open('config.json', 'r') as file:
+            config = json.load(file)
+        self.dependencies = extract_info.get_dependencies(config["source_code_file"])
+        print("dependencies:\n")
+        print(self.dependencies)
