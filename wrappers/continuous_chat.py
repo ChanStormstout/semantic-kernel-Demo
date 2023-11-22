@@ -25,11 +25,48 @@ Please assure that the Generated code includes the neccessary head files. And ma
 Generated_code: 
 """
 
+compile_modify_prompt = """
+Compilation correction history information:
+{{$compilation_history}}
+
+The following is a source code for fuzzing using libFuzzer, with target function as {{$targetFunction}}:
+{{$generated_code}}
+The following error occurred during the compilation process : {{$compilation_error}}
+Can you modify this function and return the correct code to me? Please make sure to keep the original code's header files and macro definitions, and return the complete code. Please be sure to include the entire code without any omissions!
+And the target function's source code is as follow :
+{{$target_source_code}}
+
+Assure that the Generated code includes the neccessary head files. And make sure that your generated code begins and ends with a new line containing "==========" as the content. 
+"""
+
+runtime_erro_modify_prompt = """
+You're an expert in Fuzzing and program anaylysis.
+You can give explicit instructions or say 'I need more information/details' if you do not have an answer.
+
+The following is a source code for fuzzing using libFuzzer, with target function as {{$targetFunction}}:
+{{$generated_code}}
+Runtime error correction history information:
+{{$runtime_modify_history}}
+
+During the process of program execution, the following error is encountered:
+{{$runtime_error}}
+Can you modify this function and return the correct code to me? Please make sure to keep the original code's header files and macro definitions, and return the complete code. Please be sure to include the entire code without any omissions!
+And the target function's source code is as follow :
+{{$target_source_code}}
+Assure that the Generated code includes the neccessary head files. And make sure that your generated code begins and ends with a new line containing "==========" as the content. 
+"""
+
 chat_function = kernel.create_semantic_function(sk_prompt, "ChatBot", max_tokens=2000, temperature=0.7, top_p=0.5)
 generate_function = kernel.create_semantic_function(gen_prompt, "GenBot", max_tokens=2000, temperature=0.7, top_p=0.5)
+compile_modify_function = kernel.create_semantic_function(compile_modify_prompt, "CompilationModify", max_tokens=2000, temperature=0.7, top_p=0.5)
+runtime_modify_function = kernel.create_semantic_function(runtime_erro_modify_prompt, "RuntimeModify", max_tokens=2000, temperature=0.7, top_p=0.5)
+
 context = kernel.create_new_context()
 context["history"] = ""
-   
+context["target_source_code"] = ""
+context["compilation_history"] = ""
+context["generated_code"] = ""
+context["runtime_modify_history"] = ""
 
 # define async function
 async def chat(input_text: str) -> None:
@@ -70,16 +107,35 @@ def save_to_file(content, filename):
 async def generate(target_func: str):
     print(f"\033[93mTarget_function: {target_func}\033[0m")
     context["target_function"] = target_func
-    generated_code = await generate_function.invoke_async(context=context)
-    print(f"\033[32mGenBot: {generated_code}\n\033[0m")
-    context["history"] += f"\ntarget_function: {target_func}\nGenBot: {generated_code}\n"
-    test = generated_code.result
-    save_code = process_string(test)
-    save_to_file(save_code, 'test_fuzzer.c')
+    generated_content = await generate_function.invoke_async(context=context)
+    print(f"\033[32mGenBot: {generated_content}\n\033[0m")
+    context["history"] += f"\ntarget_function: {target_func}\nGenBot: {generated_content}\n"
+    generated_code = generated_content.result
+    save_code = process_string(generated_code)
+    context["generated_code"] = save_code
+    save_to_file(save_code, 'test_fuzzer.cc')
+    return save_code
 
+async def compile_modify(target_source_code: str, compilation_error_message: str):
+    context["target_source_code"] = target_source_code
+    context["compilation_error"] = compilation_error_message
+    new_version_content = await compile_modify_function.invoke_async(context=context)
+    new_version_code = new_version_content.result
+    save_code = process_string(new_version_code)
+    context["generated_code"] = save_code
+    save_to_file(save_code, 'test_fuzzer.cc')
+
+async def runtime_erro_modify(target_source_code: str, runtime_error_message: str):
+    context["target_source_code"] = target_source_code
+    context["runtime_error"] = runtime_error_message
+    new_version_content = await runtime_modify_function.invoke_async(context=context)
+    new_version_code = new_version_content.result
+    save_code = process_string(new_version_code)
+    context["generated_code"] = save_code
+    save_to_file(save_code, 'test_fuzzer.cc')
 
 # 使用 asyncio.run 运行 main 协程
-asyncio.run(generate("printf"))
+# asyncio.run(generate("printf"))
 
 # 先成功调用这个函数
 # 成功调用a, 调用b, 调用C
