@@ -33,4 +33,5 @@
 
 # Own files
 wrappers/__pycache__/
-
+skills/
+output.dot

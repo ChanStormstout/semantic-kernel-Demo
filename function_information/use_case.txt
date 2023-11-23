@@ -1,0 +1,48 @@
+use_case 1:
+  // create an Importer for this file
+    Assimp::Importer *imp = new Assimp::Importer();
+
+    // copy properties
+    if (props) {
+        const PropertyMap *pp = reinterpret_cast<const PropertyMap *>(props);
+        ImporterPimpl *pimpl = imp->Pimpl();
+        pimpl->mIntProperties = pp->ints;
+        pimpl->mFloatProperties = pp->floats;
+        pimpl->mStringProperties = pp->strings;
+        pimpl->mMatrixProperties = pp->matrices;
+    }
+
+    // and have it read the file from the memory buffer
+    scene = imp->ReadFileFromMemory(pBuffer, pLength, pFlags, pHint);
+
+    // if succeeded, store the importer in the scene and keep it alive
+    if (scene) {
+        ScenePrivateData *priv = const_cast<ScenePrivateData *>(ScenePriv(scene));
+        priv->mOrigImporter = imp;
+    } else {
+        // if failed, extract error code and destroy the import
+        gLastErrorString = imp->GetErrorString();
+        delete imp;
+    }
+    // return imported data. If the import failed the pointer is nullptr anyways
+    ASSIMP_END_EXCEPTION_REGION(const aiScene *);
+    return scene;
+
+use_case 2:
+
+    TEST_F(utObjImportExport, obj_import_test) {
+    const aiScene *scene = m_im->ReadFileFromMemory((void *)ObjModel, strlen(ObjModel), 0);
+    aiScene *expected = createScene();
+    EXPECT_NE(nullptr, scene);
+
+    SceneDiffer differ;
+    EXPECT_TRUE(differ.isEqual(expected, scene));
+    differ.showReport();
+
+use_case 3:
+TEST_F(utPLYImportExport, parseErrorTest) {
+    Assimp::Importer importer;
+    //Could not use aiProcess_ValidateDataStructure since it's missing faces.
+    const aiScene *scene = importer.ReadFileFromMemory(test_file, strlen(test_file), 0);
+    EXPECT_NE(nullptr, scene);
+}

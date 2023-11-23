@@ -1,0 +1,6 @@
+{
+    "target_function" : "ReadFileFromMemory",
+    "source_code_file" : "Importer.cpp",
+    "lib_path" : "/home/victor/workspace/fuzzing_target_repo/assimp/lib/libassimp.a /home/victor/workspace/fuzzing_target_repo/assimp/contrib/zlib/libzlibstatic.a",
+    "compile_json_path" : "/home/victor/workspace/fuzzing_target_repo/assimp/compile_commands.json"
+}
