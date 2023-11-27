@@ -1,0 +1,6 @@
+{
+    "target_function" : "zip_open",
+    "source_code_file" : "zip_open.c",
+    "lib_path" : "",
+    "compile_json_path" : "/home/victor/fuzzing/oss-fuzz/Repos/libzip/build/compile_commands.json"
+}

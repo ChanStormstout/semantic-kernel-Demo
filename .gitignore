@@ -34,4 +34,10 @@
 # Own files
 wrappers/__pycache__/
 skills/
+lessons/
+out/
+corpus/
+coverage_report/
 output.dot
+backtrace.log
+compile_errors.log

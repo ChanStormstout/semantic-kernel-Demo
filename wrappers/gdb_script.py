@@ -1,6 +1,6 @@
 import gdb
 
-gdb.execute("file /home/victor/workspace/semantic-kernel-Demo/lessons/04/hello")
+gdb.execute("file /home/victor/workspace/semantic-kernel-Demo/fuzz_executable")
 gdb.execute("run")
 
 # capture backtrace
