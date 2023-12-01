@@ -19,7 +19,7 @@ def extract_dependencies_from_file(dot_content, target_file):
     return relevant_edges
 
 def get_dependencies(target_file):
-    with open('output.dot', 'r') as file:
+    with open('function_information/output.dot', 'r') as file:
         dot_file_content = file.read()
         return extract_dependencies_from_file(dot_file_content, target_file)
 

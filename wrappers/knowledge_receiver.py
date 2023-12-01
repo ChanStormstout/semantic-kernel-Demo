@@ -38,8 +38,8 @@ class KnowledgeReceiver(KnowledgeBase):
     # TODO: extract the information of dependencies
     
     def get_dependencies(self):
-        with open('config.json', 'r') as file:
+        with open('function_information/config.json', 'r') as file:
             config = json.load(file)
         self.dependencies = extract_info.get_dependencies(config["source_code_file"])
-        print("dependencies:\n")
-        print(self.dependencies)
+        # print("dependencies:\n")
+        # print(self.dependencies)
