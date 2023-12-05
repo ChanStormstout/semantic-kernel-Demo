@@ -1,77 +1,142 @@
-/*
-  zip_open.c -- open zip archive by name
-  Copyright (C) 1999-2022 Dieter Baron and Thomas Klausner
+int
+coap_pdu_parse(coap_proto_t proto,
+               const uint8_t *data,
+               size_t length,
+               coap_pdu_t *pdu) {
+  size_t hdr_size;
 
-  This file is part of libzip, a library to manipulate ZIP archives.
-  The authors can be contacted at <info@libzip.org>
+  if (length == 0)
+    return 0;
+  hdr_size = coap_pdu_parse_header_size(proto, data);
+  if (!hdr_size || hdr_size > length)
+    return 0;
+  if (hdr_size > pdu->max_hdr_size)
+    return 0;
+  if (!coap_pdu_resize(pdu, length - hdr_size))
+    return 0;
+  if (pdu->token - hdr_size != data)
+    memcpy(pdu->token - hdr_size, data, length);
+  pdu->hdr_size = (uint8_t)hdr_size;
+  pdu->used_size = length - hdr_size;
+  return coap_pdu_parse_header(pdu, proto) && coap_pdu_parse_opt(pdu);
+}
 
-  Redistribution and use in source and binary forms, with or without
-  modification, are permitted provided that the following conditions
-  are met:
-  1. Redistributions of source code must retain the above copyright
-     notice, this list of conditions and the following disclaimer.
-  2. Redistributions in binary form must reproduce the above copyright
-     notice, this list of conditions and the following disclaimer in
-     the documentation and/or other materials provided with the
-     distribution.
-  3. The names of the authors may not be used to endorse or promote
-     products derived from this software without specific prior
-     written permission.
+size_t
+coap_pdu_encode_header(coap_pdu_t *pdu, coap_proto_t proto) {
+  uint8_t e_token_length;
 
-  THIS SOFTWARE IS PROVIDED BY THE AUTHORS ``AS IS'' AND ANY EXPRESS
-  OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-  ARE DISCLAIMED.  IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY
-  DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
-  DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-  GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-  INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER
-  IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR
-  OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN
-  IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-*/
-
-
-#include <limits.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#include "zipint.h"
-
-typedef enum { EXISTS_ERROR = -1, EXISTS_NOT = 0, EXISTS_OK } exists_t;
-static zip_t *_zip_allocate_new(zip_source_t *src, unsigned int flags, zip_error_t *error);
-static zip_int64_t _zip_checkcons(zip_t *za, zip_cdir_t *cdir, zip_error_t *error);
-static void zip_check_torrentzip(zip_t *za, const zip_cdir_t *cdir);
-static zip_cdir_t *_zip_find_central_dir(zip_t *za, zip_uint64_t len);
-static exists_t _zip_file_exists(zip_source_t *src, zip_error_t *error);
-static int _zip_headercomp(const zip_dirent_t *, const zip_dirent_t *);
-static const unsigned char *_zip_memmem(const unsigned char *, size_t, const unsigned char *, size_t);
-static zip_cdir_t *_zip_read_cdir(zip_t *za, zip_buffer_t *buffer, zip_uint64_t buf_offset, zip_error_t *error);
-static zip_cdir_t *_zip_read_eocd(zip_buffer_t *buffer, zip_uint64_t buf_offset, unsigned int flags, zip_error_t *error);
-static zip_cdir_t *_zip_read_eocd64(zip_source_t *src, zip_buffer_t *buffer, zip_uint64_t buf_offset, unsigned int flags, zip_error_t *error);
-
-
-ZIP_EXTERN zip_t *
-zip_open(const char *fn, int _flags, int *zep) {
-    zip_t *za;
-    zip_source_t *src;
-    struct zip_error error;
-
-    zip_error_init(&error);
-    if ((src = zip_source_file_create(fn, 0, -1, &error)) == NULL) {
-        _zip_set_open_error(zep, &error, 0);
-        zip_error_fini(&error);
-        return NULL;
+  if (pdu->actual_token.length < COAP_TOKEN_EXT_1B_BIAS) {
+    e_token_length = (uint8_t)pdu->actual_token.length;
+  } else if (pdu->actual_token.length < COAP_TOKEN_EXT_2B_BIAS) {
+    e_token_length = COAP_TOKEN_EXT_1B_TKL;
+  } else if (pdu->actual_token.length <= COAP_TOKEN_EXT_MAX) {
+    e_token_length = COAP_TOKEN_EXT_2B_TKL;
+  } else {
+    coap_log_warn("coap_add_token: Token size too large. PDU ignored\n");
+    return 0;
+  }
+  if (COAP_PROTO_NOT_RELIABLE(proto)) {
+    assert(pdu->max_hdr_size >= 4);
+    if (pdu->max_hdr_size < 4) {
+      coap_log_warn("coap_pdu_encode_header: not enough space for UDP-style header\n");
+      return 0;
+    }
+    pdu->token[-4] = COAP_DEFAULT_VERSION << 6
+                     | pdu->type << 4
+                     | e_token_length;
+    pdu->token[-3] = pdu->code;
+    pdu->token[-2] = (uint8_t)(pdu->mid >> 8);
+    pdu->token[-1] = (uint8_t)(pdu->mid);
+    pdu->hdr_size = 4;
+#if !COAP_DISABLE_TCP
+  } else if (COAP_PROTO_RELIABLE(proto)) {
+    size_t len;
+    assert(pdu->used_size >= pdu->e_token_length);
+    if (pdu->used_size < pdu->e_token_length) {
+      coap_log_warn("coap_pdu_encode_header: corrupted PDU\n");
+      return 0;
     }
 
-    if ((za = zip_open_from_source(src, _flags, &error)) == NULL) {
-        zip_source_free(src);
-        _zip_set_open_error(zep, &error, 0);
-        zip_error_fini(&error);
-        return NULL;
-    }
+    /* A lot of the reliable code assumes type is CON */
+    if (pdu->type != COAP_MESSAGE_CON)
+      pdu->type = COAP_MESSAGE_CON;
 
-    zip_error_fini(&error);
-    return za;
-}   
+    if (proto == COAP_PROTO_WS || proto == COAP_PROTO_WSS)
+      len = 0;
+    else
+      len = pdu->used_size - pdu->e_token_length;
+    if (len <= COAP_MAX_MESSAGE_SIZE_TCP0) {
+      assert(pdu->max_hdr_size >= 2);
+      if (pdu->max_hdr_size < 2) {
+        coap_log_warn("coap_pdu_encode_header: not enough space for TCP0 header\n");
+        return 0;
+      }
+      pdu->token[-2] = (uint8_t)len << 4
+                       | e_token_length;
+      pdu->token[-1] = pdu->code;
+      pdu->hdr_size = 2;
+    } else if (len <= COAP_MAX_MESSAGE_SIZE_TCP8) {
+      assert(pdu->max_hdr_size >= 3);
+      if (pdu->max_hdr_size < 3) {
+        coap_log_warn("coap_pdu_encode_header: not enough space for TCP8 header\n");
+        return 0;
+      }
+      pdu->token[-3] = 13 << 4 | e_token_length;
+      pdu->token[-2] = (uint8_t)(len - COAP_MESSAGE_SIZE_OFFSET_TCP8);
+      pdu->token[-1] = pdu->code;
+      pdu->hdr_size = 3;
+    } else if (len <= COAP_MAX_MESSAGE_SIZE_TCP16) {
+      assert(pdu->max_hdr_size >= 4);
+      if (pdu->max_hdr_size < 4) {
+        coap_log_warn("coap_pdu_encode_header: not enough space for TCP16 header\n");
+        return 0;
+      }
+      pdu->token[-4] = 14 << 4 | e_token_length;
+      pdu->token[-3] = (uint8_t)((len - COAP_MESSAGE_SIZE_OFFSET_TCP16) >> 8);
+      pdu->token[-2] = (uint8_t)(len - COAP_MESSAGE_SIZE_OFFSET_TCP16);
+      pdu->token[-1] = pdu->code;
+      pdu->hdr_size = 4;
+    } else {
+      assert(pdu->max_hdr_size >= 6);
+      if (pdu->max_hdr_size < 6) {
+        coap_log_warn("coap_pdu_encode_header: not enough space for TCP32 header\n");
+        return 0;
+      }
+      pdu->token[-6] = 15 << 4 | e_token_length;
+      pdu->token[-5] = (uint8_t)((len - COAP_MESSAGE_SIZE_OFFSET_TCP32) >> 24);
+      pdu->token[-4] = (uint8_t)((len - COAP_MESSAGE_SIZE_OFFSET_TCP32) >> 16);
+      pdu->token[-3] = (uint8_t)((len - COAP_MESSAGE_SIZE_OFFSET_TCP32) >> 8);
+      pdu->token[-2] = (uint8_t)(len - COAP_MESSAGE_SIZE_OFFSET_TCP32);
+      pdu->token[-1] = pdu->code;
+      pdu->hdr_size = 6;
+    }
+#endif /* ! COAP_DISABLE_TCP */
+  } else {
+    coap_log_warn("coap_pdu_encode_header: unsupported protocol\n");
+  }
+  return pdu->hdr_size;
+}
+
+coap_string_t *
+coap_get_uri_path(const coap_pdu_t *request) {
+  coap_opt_iterator_t opt_iter;
+  coap_opt_filter_t f;
+  coap_opt_t *q;
+  coap_string_t *uri_path = NULL;
+  size_t length = 0;
+  static const uint8_t hex[] = "0123456789ABCDEF";
+
+  q = coap_check_option(request, COAP_OPTION_PROXY_URI, &opt_iter);
+  if (q) {
+    coap_uri_t uri;
+
+    if (coap_split_proxy_uri(coap_opt_value(q),
+                             coap_opt_length(q), &uri) < 0) {
+      return NULL;
+    }
+    uri_path = coap_new_string(uri.path.length);
+    if (uri_path) {
+      memcpy(uri_path->s, uri.path.s, uri.path.length);
+    }
+    return uri_path;
+  }

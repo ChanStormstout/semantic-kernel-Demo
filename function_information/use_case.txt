@@ -1,75 +1,28 @@
-use_case 1:
-int
-main(int argc, char *argv[]) {
-    const char *archive;
-    zip_source_t *src, *src_comp;
-    zip_t *za;
-    int err;
+#if !COAP_DISABLE_TCP
+  } else if (session->proto == COAP_PROTO_WS ||
+             session->proto == COAP_PROTO_WSS) {
+    ssize_t bytes_read = 0;
 
-    if (argc != 2) {
-        fprintf(stderr, "usage: %s archive\n", argv[0]);
-        return 1;
-    }
-    archive = argv[1];
+    /* WebSocket layer passes us the whole packet */
+    bytes_read = session->sock.lfunc[COAP_LAYER_SESSION].l_read(session,
+                                                                packet->payload,
+                                                                packet->length);
+    if (bytes_read < 0) {
+      coap_session_disconnected(session, COAP_NACK_NOT_DELIVERABLE);
+    } else if (bytes_read > 2) {
+      coap_pdu_t *pdu;
 
-    if ((za = zip_open(archive, ZIP_CREATE, &err)) == NULL) {
-        zip_error_t error;
-        zip_error_init_with_code(&error, err);
-        fprintf(stderr, "%s: cannot open zip archive '%s': %s\n", argv[0], archive, zip_error_strerror(&error));
-        zip_error_fini(&error);
-        exit(1);
-    }
+      session->last_rx_tx = now;
+      /* Need max space incase PDU is updated with updated token etc. */
+      pdu = coap_pdu_init(0, 0, 0, coap_session_max_pdu_rcv_size(session));
+      if (!pdu) {
+#if COAP_CONSTRAINED_STACK
+        coap_mutex_unlock(&m_read_session);
+#endif /* COAP_CONSTRAINED_STACK */
+        return;
+      }
 
-use_case2:
-int
-main(int argc, char *argv[]) {
-    const char *destination_archive, *source_archive, *source_file;
-    zip_int64_t index;
-    zip_source_t *src, *src_autoclose;
-    zip_t *z_source, *z_destination;
-    int err;
-
-    if (argc != 4) {
-        fprintf(stderr, "usage: %s destination-archive source-archive source-file\n", argv[0]);
-        return 1;
-    }
-    destination_archive = argv[1];
-    source_archive = argv[2];
-    source_file = argv[3];
-
-
-    if ((z_source = zip_open(source_archive, 0, &err)) == NULL) {
-        zip_error_t error;
-        zip_error_init_with_code(&error, err);
-        fprintf(stderr, "%s: cannot open zip archive '%s': %s\n", argv[0], source_archive, zip_error_strerror(&error));
-        zip_error_fini(&error);
-        exit(1);
-    }
-
-    if ((index = zip_name_locate(z_source, source_file, 0)) < 0) {
-        fprintf(stderr, "%s: cannot find file '%s' in '%s': %s\n", argv[0], source_file, source_archive, zip_strerror(z_source));
-        zip_discard(z_source);
-        exit(1);
-
-    }
-    if ((src = zip_source_zip_file(z_source, z_source, index, 0, 0, -1, NULL)) == NULL) {
-        fprintf(stderr, "%s: cannot open file '%s' in '%s': %s\n", argv[0], source_file, source_archive, zip_strerror(z_source));
-        zip_discard(z_source);
-        exit(1);
-    }
-
-    zip_error_t error;
-    if ((src_autoclose = create_layered_autoclose(src, z_source, &error)) == NULL) {
-        fprintf(stderr, "%s: cannot create layered source: %s\n", argv[0], zip_error_strerror(&error));
-        zip_source_free(src);
-        zip_discard(z_source);
-        exit(1);
-    }
-
-    if ((z_destination = zip_open(destination_archive, ZIP_CREATE, &err)) == NULL) {
-        zip_error_init_with_code(&error, err);
-        fprintf(stderr, "%s: cannot open zip archive '%s': %s\n", argv[0], destination_archive, zip_error_strerror(&error));
-        zip_error_fini(&error);
-        zip_source_free(src_autoclose); /* freeing src_autoclose closes z_source */
-        exit(1);
-    }
+      if (!coap_pdu_parse(session->proto, packet->payload, bytes_read, pdu)) {
+        coap_handle_event(session->context, COAP_EVENT_BAD_PACKET, session);
+        coap_log_warn("discard malformed PDU\n");
+        coap_delete_pdu(pdu);

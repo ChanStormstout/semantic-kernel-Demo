@@ -1,26 +1,24 @@
-#include "Common/Importer.h"
-#include "Common/BaseProcess.h"
-#include "Common/DefaultProgressHandler.h"
-#include "PostProcessing/ProcessHelper.h"
-#include "Common/ScenePreprocessor.h"
-#include "Common/ScenePrivate.h"
+#include <stdint.h>
+#include <stddef.h>
+#include "coap3/coap.h"
+#include "/home/victor/workspace/fuzzing_target_repo/libcoap/include/coap3/coap_pdu.h"
 
 extern "C" int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size) {
-    // Create an instance of the Importer class
-    Assimp::Importer importer;
+    coap_proto_t proto = COAP_PROTO_UDP;
 
-    // Optionally, set up any required properties or flags for the importer here
-    // ...
+    // Initialize pdu with correct enum types and values
+    // Assuming COAP_MESSAGE_CON and COAP_REQUEST_GET are correct, check your library for exact values
+    coap_pdu_t *pdu = coap_pdu_init(0, 0, 0, size);
+    if (!pdu) {
+        return 0;
+    }
 
-    // Call the ReadFileFromMemory function with the provided data and size
-    const aiScene* scene = importer.ReadFileFromMemory(static_cast<const void*>(data), size, 0 /* flags */, nullptr /* hint */);
+    coap_add_data(pdu, size, data);
 
-    // For fuzzing, we typically don't need to do anything with the scene
-    // However, if you want to check certain properties, you can do so here
-    // ...
+    // Invoke the target function
+    coap_pdu_parse(proto, data, size, pdu);
 
-    // The return value is non-zero if the input is interesting (e.g., triggers a crash or bug)
-    // and zero otherwise. For now, we return zero to indicate successful processing of the input.
+    coap_delete_pdu(pdu);
+
     return 0;
 }
-
