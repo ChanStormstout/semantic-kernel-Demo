@@ -21,7 +21,13 @@ def extract_include_dirs(file_path, target_file):
             data = json.load(file)
             for command in data:
                 # Check if the command is for the target file
-                if command.get("file", "").endswith(target_file):
+                file_entry = command.get("file", "")
+                if file_entry.endswith(target_file):
+                    # Add the directory of the target file
+                    target_file_dir = os.path.dirname(file_entry)
+                    include_dirs.append(target_file_dir)
+
+                    # Process the arguments to find -I include directories
                     directory = command.get("directory", "")
                     args = command.get("arguments", [])
                     for arg in args:
@@ -58,6 +64,8 @@ def compile_and_link(source_file, include_dirs, output_executable, libraries):
     # 构建编译命令
     compile_command = ["clang++", "-g", source_file, "-O2", "-fno-omit-frame-pointer",
                        "-fsanitize=address,fuzzer", "-fsanitize-coverage=trace-cmp,trace-gep,trace-div"]
+    # compile_command = ["afl-clang-fast++", "-g", source_file, "-O2", "-fno-omit-frame-pointer",
+    #                    "-fsanitize=address,fuzzer"]
 
     # 添加 -I 参数
     for dir in include_dirs:
@@ -85,15 +93,14 @@ def compile_and_link(source_file, include_dirs, output_executable, libraries):
         return error_message  # 可以选择返回错误信息，或者写入文件等
 
 
-# directory = '/home/victor/fuzzing/libfuzzer-workshop/lessons/05'  # Replace with the actual directory path
-# file_path = '/home/victor/fuzzing/libfuzzer-workshop/lessons/05/openssl1.0.1f/compile_commands.json'
-# target_file = 'ssl_lib.c'
-# include_dirs = extract_include_dirs(file_path, target_file)
-# static_libs_dir = '/home/victor/fuzzing/libfuzzer-workshop/lessons/05'
-
 # 调用函数
 # libraries = ["/home/victor/fuzzing/libfuzzer-workshop/lessons/05/openssl1.0.1f/libssl.a", "/home/victor/fuzzing/libfuzzer-workshop/lessons/05/openssl1.0.1f/libcrypto.a"]
 # libraries = get_libraries_from_user()
 # source_file = "/home/victor/fuzzing/libfuzzer-workshop/lessons/05/openssl_fuzzer.cc"
 # output_executable = "fuzz_executable"
 # compile_and_link(source_file, include_dirs, output_executable, libraries)
+# print(extract_include_dirs("/home/victor/workspace/fuzzing_target_repo/brpc/build/compile_commands.json", "http_message.cpp"))
+
+# include_dirs = extract_include_dirs("/home/victor/workspace/fuzzing_target_repo/libspng/build/compile_commands.json", "spng.c")
+# libraries = get_libraries_from_user("/home/victor/workspace/fuzzing_target_repo/libspng/build/libspng_static.a")
+# compile_and_link("test_fuzzer.cc", include_dirs, "fuzz_executable", libraries)

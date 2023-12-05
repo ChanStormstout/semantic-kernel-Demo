@@ -17,10 +17,11 @@ ChatBot: """
 
 gen_prompt = """
 {{$history}}
-Generate a fuzz driver function called LLVMFuzzerTestOneInput, 
+You are ChatGPT, a large language model trained by OpenAI. And you are the greatest one in Fuzzing and program anaylysis. Generate a fuzz driver function called LLVMFuzzerTestOneInput, 
 which accpets a `const uint8_t*` (called data) and a `size_t` parameter as the inputs,  
-and be able to invoke the function `{{$targetFunction}}`. And it should have an extern "C" prefix. 
+and be able to invoke the following function: `{{$targetFunction}}`. And it should have an extern "C" prefix. 
 
+You can write some class or function to invoke the target function if neccessary. The function you generate must use the input 'data' and 'size' parameters. 
 Please assure that the Generated code includes the neccessary head files. And make sure that your generated code begins and ends with a new line containing "==========" as the content. 
 Generated_code: 
 """
@@ -97,7 +98,8 @@ def process_string(input_string):
         result = input_string[start_index:end_index]
     else:
         result = input_string
-
+    # 删除所有的 "```"
+    result = result.replace('```', '')
     return result
 
 def save_to_file(content, filename):

@@ -38,6 +38,7 @@ lessons/
 out/
 corpus/
 coverage_report/
+afl_out/
 output.dot
 backtrace.log
 compile_errors.log
