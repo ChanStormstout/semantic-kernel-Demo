@@ -4,7 +4,7 @@ import subprocess
 from continuous_chat import chat, generate, compile_modify, runtime_erro_modify
 from c_fuzzer_wrapper import CFuzzerWrapper
 from compilation_error_capture import compile_and_link, get_libraries_from_user, extract_include_dirs
-from runtime_error_capture import capture_bt
+from runtime_error_capture import run_gdb_and_capture_output
 from extract_info import read_file
 
 with open('function_information/config.json', 'r') as file:
@@ -81,7 +81,7 @@ async def main():
     # Catch the exception if the program exits with a non-zero exit code
         print("Program encountered an error, Exit Code:", e.returncode)
         print("Error Output:", e.stderr)
-        backtrace_info = capture_bt()
+        backtrace_info = run_gdb_and_capture_output()
         code_content = read_file("test_fuzzer.cc")
         await runtime_erro_modify(code_content, backtrace_info)
         # while backtrace_info is not None and compile_error is not None and round <= 6: 
