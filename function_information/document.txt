@@ -1,205 +1,179 @@
-/**
- * Parses @p data into the CoAP PDU structure given in @p result.
- * The target pdu must be large enough to hold the token, options and data.
- * This function returns @c 0 on error or a number greater than zero on success.
- *
- * @param proto   Session's protocol
- * @param data    The raw data to parse as CoAP PDU.
- * @param length  The actual size of @p data.
- * @param pdu     The PDU structure to fill. Note that the structure must
- *                provide space to hold the token, optional options and
- *                optional data.
- *
- * @return       1 on success or @c 0 on error.
- */
-int coap_pdu_parse(coap_proto_t proto,
-                   const uint8_t *data,
-                   size_t length,
-                   coap_pdu_t *pdu);
+The most common affected use is `zip_open`. The new recommended usage
+is:
 
-
-typedef struct {
-  coap_str_const_t host;  /**< The host part of the URI */
-  uint16_t port;          /**< The port in host byte order */
-  coap_str_const_t path;  /**< The complete path if present or {0, NULL}.
-                               Needs to be split using coap_split_path()
-                               or coap_uri_into_options(). */
-  coap_str_const_t query; /**< The complete query if present or {0, NULL}.
-                               Needs to be split using coap_split_query()
-                               or coap_uri_into_options(). */
-  /** The parsed scheme specifier. */
-  enum coap_uri_scheme_t scheme;
-} coap_uri_t;
-
-static inline int
-coap_uri_scheme_is_secure(const coap_uri_t *uri) {
-  return uri && ((uri->scheme & COAP_URI_SCHEME_SECURE_MASK) != 0);
+```c
+int err;
+if ((za = zip_open(archive, flags, &err)) == NULL) {
+	zip_error_t error;
+	zip_error_init_with_code(&error, err);
+	fprintf(stderr, "can't open zip archive '%s': %s\n", archive, zip_error_strerror(&error));
+	zip_error_fini(&error);
 }
+```
 
-/**
- * Determines from the @p host whether this is a Unix Domain socket
- * request.
- *
- * @param host    The host object.
- *
- * @return        @c 0 on failure, or @c 1 on success.
- *
- */
-int coap_host_is_unix_domain(const coap_str_const_t *host);
+### more typedefs
 
-/**
- * Creates a new coap_uri_t object from the specified URI. Returns the new
- * object or NULL on error. The memory allocated by the new coap_uri_t
- * should be released using coap_delete_uri().
- *
- * @param uri The URI path to copy.
- * @param length The length of uri.
- *
- * @return New URI object or NULL on error.
- */
-coap_uri_t *coap_new_uri(const uint8_t *uri, unsigned int length);
+The following typedefs have been added for better readability:
 
-/**
- * Clones the specified coap_uri_t object. This function allocates sufficient
- * memory to hold the coap_uri_t structure and its contents. The object should
- * be released with delete_uri().
- *
- * @param uri The coap_uri_t structure to copy.
- *
- * @return New URI object or NULL on error.
- */
-coap_uri_t *coap_clone_uri(const coap_uri_t *uri);
+```c
+typedef struct zip zip_t;
+typedef struct zip_file zip_file_t;
+typedef struct zip_source zip_source_t;
+typedef struct zip_stat zip_stat_t;
+```
 
-/**
- * Removes the specified coap_uri_t object.
- *
- * @param uri The coap_uri_t structure to remove.
- */
-void coap_delete_uri(coap_uri_t *uri);
+This means you can use "`zip_t`" instead of "`struct zip`", etc.
 
-/**
- * @ingroup application_api
- * @defgroup uri_parse URI Parsing Functions
- * API for parsing URIs.
- * CoAP PDUs contain normalized URIs with their path and query split into
- * multiple segments. The functions in this module help splitting strings.
- * @{
- */
 
-/**
- * Parses a given string into URI components. The identified syntactic
- * components are stored in the result parameter @p uri. Optional URI
- * components that are not specified will be set to { 0, 0 }, except for the
- * port which is set to the default port for the protocol. This function
- * returns @p 0 if parsing succeeded, a value less than zero otherwise.
- *
- * @param str_var The string to split up.
- * @param len     The actual length of @p str_var
- * @param uri     The coap_uri_t object to store the result.
- *
- * @return        @c 0 on success, or < 0 on error.
- *
- */
-int coap_split_uri(const uint8_t *str_var, size_t len, coap_uri_t *uri);
+2.
+Here's the related function definition and other definitions in the repository:
 
-/**
- * Parses a given string into URI components. The identified syntactic
- * components are stored in the result parameter @p uri. Optional URI
- * components that are not specified will be set to { 0, 0 }, except for the
- * port which is set to default port for the protocol. This function returns
- * @p 0 if parsing succeeded, a value less than zero otherwise.
- * Note: This function enforces that the given string is in Proxy-Uri format
- *       as well as supports different schema such as http and https.
- *
- * @param str_var The string to split up.
- * @param len     The actual length of @p str_var
- * @param uri     The coap_uri_t object to store the result.
- *
- * @return        @c 0 on success, or < 0 on error.
- *
- */
-int coap_split_proxy_uri(const uint8_t *str_var, size_t len, coap_uri_t *uri);
+Function Declarations for zip_open:
+ZIP_EXTERN zip_t *_Nullable zip_open(const char *_Nonnull, int, int *_Nullable);
+ZIP_EXTERN zip_t *_Nullable zip_open_from_source(zip_source_t *_Nonnull, int, zip_er
 
-/**
- * Takes a coap_uri_t and then adds CoAP options into the @p optlist_chain.
- * If the port is not the default port and create_port_host_opt is not 0, then
- * the Port option is added to the @p optlist_chain.
- * If the dst defines an address that does not match the host in uri->host and
- * is not 0, then the Host option is added to the @p optlist_chain.
- * Any path or query are broken down into the individual segment Path or Query
- * options and added to the @p optlist_chain.
- *
- * @param uri     The coap_uri_t object.
- * @param dst     The destination, or NULL if URI_HOST not to be added.
- * @param optlist_chain Where to store the chain of options.
- * @param buf     Scratch buffer area (needs to be bigger than
- *                uri->path.length and uri->query.length)
- * @param buflen  Size of scratch buffer.
- * @param create_port_host_opt @c 1 if port/host option to be added
- *                             (if non-default) else @c 0
- *
- * @return        @c 0 on success, or < 0 on error.
- *
- */
-int coap_uri_into_options(const coap_uri_t *uri, const coap_address_t *dst,
-                          coap_optlist_t **optlist_chain,
-                          int create_port_host_opt,
-                          uint8_t *buf, size_t buflen);
+Related Function Declarations:
+ZIP_EXTERN zip_int64_t zip_file_add(zip_t *_Nonnull, const char *_Nonnull, zip_source_t *_Nonnull, zip_flags_t);
+ZIP_EXTERN zip_int64_t zip_name_locate(zip_t *_Nonnull, const char *_Nonnull, zip_flags_t);
+ZIP_EXTERN zip_t *_Nullable zip_fopen(zip_t *_Nonnull, const char *_Nonnull, zip_flags_t);
+ZIP_EXTERN zip_file_t *_Nullable zip_fopen_encrypted(zip_t *_Nonnull, const char *_Nonnull, zip_flags_t, const char *_Nullable);
+ZIP_EXTERN zip_file_t *_Nullable zip_fopen_index(zip_t *_Nonnull, zip_uint64_t, zip_flags_t);
+ZIP_EXTERN zip_file_t *_Nullable zip_fopen_index_encrypted(zip_t *_Nonnull, zip_uint64_t, zip_flags_t, const char *_Nullable);
+ZIP_EXTERN const char *_Nullable zip_get_name(zip_t *_Nonnull, zip_uint64_t, zip_flags_t);
+ZIP_EXTERN zip_int64_t zip_get_num_entries(zip_t *_Nonnull, zip_flags_t);
+ZIP_EXTERN zip_int64_t zip_error_to_data(const zip_error_t *_Nonnull, void *_Nonnull, zip_uint64_t);
+ZIP_EXTERN const char *_Nonnull zip_libzip_version(void);
+ZIP_EXTERN zip_source_t *_Nullable zip_source_buffer(zip_t *_Nonnull, const void *_Nullable, zip_uint64_t, int);
+ZIP_EXTERN zip_source_t *_Nullable zip_source_file(zip_t *_Nonnull, const char *_Nonnull, zip_uint64_t, zip_int64_t);
 
-/**
- * Splits the given URI path into segments. Each segment is preceded
- * by an option pseudo-header with delta-value 0 and the actual length
- * of the respective segment after percent-decoding.
- *
- * @param s      The path string to split.
- * @param length The actual length of @p s.
- * @param buf    Result buffer for parsed segments.
- * @param buflen Maximum length of @p buf. Will be set to the actual number
- *               of bytes written into buf on success.
- *
- * @return       The number of segments created or @c -1 on error.
- */
-int coap_split_path(const uint8_t *s,
-                    size_t length,
-                    unsigned char *buf,
-                    size_t *buflen);
 
-/**
- * Splits the given URI query into segments. Each segment is preceded
- * by an option pseudo-header with delta-value 0 and the actual length
- * of the respective query term.
- *
- * @param s      The query string to split.
- * @param length The actual length of @p s.
- * @param buf    Result buffer for parsed segments.
- * @param buflen Maximum length of @p buf. Will be set to the actual number
- *               of bytes written into buf on success.
- *
- * @return       The number of segments created or @c -1 on error.
- *
- * @bug This function does not reserve additional space for delta > 12.
- */
-int coap_split_query(const uint8_t *s,
-                     size_t length,
-                     unsigned char *buf,
-                     size_t *buflen);
+Macro Definitions:
+#define ZIP_CREATE 1
+#define ZIP_EXCL 2
+#define ZIP_CHECKCONS 4
+#define ZIP_TRUNCATE 8
+#define ZIP_RDONLY 16
 
-/**
- * Extract query string from request PDU according to escape rules in 6.5.8.
- * @param request Request PDU.
- * @return        Reconstructed and escaped query string part or @c NULL if
- *                no query was contained in @p request. The coap_string_t
- *                object returned by this function must be released with
- *                coap_delete_string.
- */
-coap_string_t *coap_get_query(const coap_pdu_t *request);
+#define ZIP_FL_NOCASE 1u       /* ignore case on name lookup */
+#define ZIP_FL_NODIR 2u        /* ignore directory component */
+#define ZIP_FL_COMPRESSED 4u   /* read compressed data */
+#define ZIP_FL_UNCHANGED 8u    /* use original data, ignoring changes */
+#define ZIP_FL_ENCRYPTED 32u   /* read encrypted data (implies ZIP_FL_COMPRESSED) */
+#define ZIP_FL_ENC_RAW 64u     /* get unmodified string */
+#define ZIP_FL_ENC_STRICT 128u /* follow specification strictly */
+#define ZIP_FL_LOCAL 256u      /* in local header */
+#define ZIP_FL_CENTRAL 512u    /* in central directory */
+#define ZIP_FL_ENC_UTF_8 2048u /* string is UTF-8 encoded */
+#define ZIP_FL_ENC_CP437 4096u /* string is CP437 encoded */
+#define ZIP_FL_OVERWRITE 8192u /* zip_file_add: if file with name exists, overwrite (replace) it */
 
-/**
- * Extract uri_path string from request PDU
- * @param request Request PDU.
- * @return        Reconstructed and escaped uri path string part or @c NULL
- *                if no URI-Path was contained in @p request. The
- *                coap_string_t object returned by this function must be
- *                released with coap_delete_string.
- */
-coap_string_t *coap_get_uri_path(const coap_pdu_t *request);
+#define ZIP_AFL_RDONLY  2u /* read only -- cannot be cleared */
+#define ZIP_AFL_IS_TORRENTZIP 4u /* current archive is torrentzipped */
+#define ZIP_AFL_WANT_TORRENTZIP 8u /* write archive in torrentzip format */
+#define ZIP_AFL_CREATE_OR_KEEP_FILE_FOR_EMPTY_ARCHIVE 16u /* don't remove file if archive is empty */
+
+#define ZIP_ER_OK 0               /* N No error */
+#define ZIP_ER_MULTIDISK 1        /* N Multi-disk zip archives not supported */
+#define ZIP_ER_RENAME 2           /* S Renaming temporary file failed */
+#define ZIP_ER_CLOSE 3            /* S Closing zip archive failed */
+#define ZIP_ER_SEEK 4             /* S Seek error */
+#define ZIP_ER_READ 5             /* S Read error */
+#define ZIP_ER_WRITE 6            /* S Write error */
+#define ZIP_ER_CRC 7              /* N CRC error */
+#define ZIP_ER_ZIPCLOSED 8        /* N Containing zip archive was closed */
+#define ZIP_ER_NOENT 9            /* N No such file */
+#define ZIP_ER_EXISTS 10          /* N File already exists */
+#define ZIP_ER_OPEN 11            /* S Can't open file */
+#define ZIP_ER_TMPOPEN 12         /* S Failure to create temporary file */
+#define ZIP_ER_ZLIB 13            /* Z Zlib error */
+#define ZIP_ER_MEMORY 14          /* N Malloc failure */
+#define ZIP_ER_CHANGED 15         /* N Entry has been changed */
+#define ZIP_ER_COMPNOTSUPP 16     /* N Compression method not supported */
+#define ZIP_ER_EOF 17             /* N Premature end of file */
+#define ZIP_ER_INVAL 18           /* N Invalid argument */
+#define ZIP_ER_NOZIP 19           /* N Not a zip archive */
+#define ZIP_ER_INTERNAL 20        /* N Internal error */
+#define ZIP_ER_INCONS 21          /* L Zip archive inconsistent */
+#define ZIP_ER_REMOVE 22          /* S Can't remove file */
+#define ZIP_ER_DELETED 23         /* N Entry has been deleted */
+#define ZIP_ER_ENCRNOTSUPP 24     /* N Encryption method not supported */
+#define ZIP_ER_RDONLY 25          /* N Read-only archive */
+#define ZIP_ER_NOPASSWD 26        /* N No password provided */
+#define ZIP_ER_WRONGPASSWD 27     /* N Wrong password provided */
+#define ZIP_ER_OPNOTSUPP 28       /* N Operation not supported */
+#define ZIP_ER_INUSE 29           /* N Resource still in use */
+#define ZIP_ER_TELL 30            /* S Tell error */
+#define ZIP_ER_COMPRESSED_DATA 31 /* N Compressed data invalid */
+#define ZIP_ER_CANCELLED 32       /* N Operation cancelled */
+#define ZIP_ER_DATA_LENGTH 33     /* N Unexpected length of data */
+#define ZIP_ER_NOT_ALLOWED 34     /* N Not allowed in torrentzip */
+#define ZIP_ER_TRUNCATED_ZIP 35   /* N Possibly truncated or corrupted zip archive */
+
+Structure Definitions:
+struct zip_error {
+    int zip_err;         /* libzip error code (ZIP_ER_*) */
+    int sys_err;         /* copy of errno (E*) or zlib error code */
+    char *_Nullable str; /* string representation or NULL */
+};
+typedef struct zip_error zip_error_t;
+
+
+struct zip_stat {
+    zip_uint64_t valid;             /* which fields have valid values */
+    const char *_Nullable name;     /* name of the file */
+    zip_uint64_t index;             /* index within archive */
+    zip_uint64_t size;              /* size of file (uncompressed) */
+    zip_uint64_t comp_size;         /* size of file (compressed) */
+    time_t mtime;                   /* modification time */
+    zip_uint32_t crc;               /* crc of file data */
+    zip_uint16_t comp_method;       /* compression method used */
+    zip_uint16_t encryption_method; /* encryption method used */
+    zip_uint32_t flags;             /* reserved for future use */
+};
+typedef struct zip_stat zip_stat_t;
+
+
+struct zip_source_args_seek {
+    zip_int64_t offset;
+    int whence;
+};
+typedef struct zip_source_args_seek zip_source_args_seek_t;
+
+struct zip_file_attributes {
+    zip_uint64_t valid;                     /* which fields have valid values */
+    zip_uint8_t version;                    /* version of this struct, currently 1 */
+    zip_uint8_t host_system;                /* host system on which file was created */
+    zip_uint8_t ascii;                      /* flag whether file is ASCII text */
+    zip_uint8_t version_needed;             /* minimum version needed to extract file */
+    zip_uint32_t external_file_attributes;  /* external file attributes (host-system specific) */
+    zip_uint16_t general_purpose_bit_flags; /* general purpose big flags, only some bits are honored */
+    zip_uint16_t general_purpose_bit_mask;  /* which bits in general_purpose_bit_flags are valid */
+};
+typedef struct zip_file_attributes zip_file_attributes_t;
+
+
+enum zip_source_cmd {
+    ZIP_SOURCE_OPEN,                /* prepare for reading */
+    ZIP_SOURCE_READ,                /* read data */
+    ZIP_SOURCE_CLOSE,               /* reading is done */
+    ZIP_SOURCE_STAT,                /* get meta information */
+    ZIP_SOURCE_ERROR,               /* get error information */
+    ZIP_SOURCE_FREE,                /* cleanup and free resources */
+    ZIP_SOURCE_SEEK,                /* set position for reading */
+    ZIP_SOURCE_TELL,                /* get read position */
+    ZIP_SOURCE_BEGIN_WRITE,         /* prepare for writing */
+    ZIP_SOURCE_COMMIT_WRITE,        /* writing is done */
+    ZIP_SOURCE_ROLLBACK_WRITE,      /* discard written changes */
+    ZIP_SOURCE_WRITE,               /* write data */
+    ZIP_SOURCE_SEEK_WRITE,          /* set position for writing */
+    ZIP_SOURCE_TELL_WRITE,          /* get write position */
+    ZIP_SOURCE_SUPPORTS,            /* check whether source supports command */
+    ZIP_SOURCE_REMOVE,              /* remove file */
+    ZIP_SOURCE_RESERVED_1,          /* previously used internally */
+    ZIP_SOURCE_BEGIN_WRITE_CLONING, /* like ZIP_SOURCE_BEGIN_WRITE, but keep part of original file */
+    ZIP_SOURCE_ACCEPT_EMPTY,        /* whether empty files are valid archives */
+    ZIP_SOURCE_GET_FILE_ATTRIBUTES, /* get additional file attributes */
+    ZIP_SOURCE_SUPPORTS_REOPEN,     /* allow reading from changed entry */
+    ZIP_SOURCE_GET_DOS_TIME         /* get last modification time in DOS format */
+};
+typedef enum zip_source_cmd zip_source_cmd_t;

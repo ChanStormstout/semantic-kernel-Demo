@@ -1,0 +1,51 @@
+GNU gdb (Ubuntu 12.1-0ubuntu1~22.04) 12.1
+Copyright (C) 2022 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.
+Type "show copying" and "show warranty" for details.
+This GDB was configured as "x86_64-linux-gnu".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<https://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+    <http://www.gnu.org/software/gdb/documentation/>.
+
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from /home/victor/workspace/semantic-kernel-Demo/fuzz_executable...
+Starting program: /home/victor/workspace/semantic-kernel-Demo/fuzz_executable 
+[Thread debugging using libthread_db enabled]
+Using host libthread_db library "/lib/x86_64-linux-gnu/libthread_db.so.1".
+INFO: Running with entropic power schedule (0xFF, 100).
+INFO: Seed: 2800677126
+INFO: Loaded 1 modules   (4 inline 8-bit counters): 4 [0x5555556cf180, 0x5555556cf184), 
+INFO: Loaded 1 PC tables (4 PCs): 4 [0x5555556cf188,0x5555556cf1c8), 
+INFO: -max_len is not provided; libFuzzer will not generate inputs larger than 4096 bytes
+[New Thread 0x7ffff3df9640 (LWP 666005)]
+INFO: A corpus is not provided, starting from an empty corpus
+#2	INITED cov: 2 ft: 2 corp: 1/1b exec/s: 0 rss: 33Mb
+#524288	pulse  cov: 2 ft: 2 corp: 1/1b lim: 4096 exec/s: 174762 rss: 459Mb
+#1048576	pulse  cov: 2 ft: 2 corp: 1/1b lim: 4096 exec/s: 149796 rss: 461Mb
+#2097152	pulse  cov: 2 ft: 2 corp: 1/1b lim: 4096 exec/s: 149796 rss: 464Mb
+#4194304	pulse  cov: 2 ft: 2 corp: 1/1b lim: 4096 exec/s: 144631 rss: 464Mb
+#8388608	pulse  cov: 2 ft: 2 corp: 1/1b lim: 4096 exec/s: 133152 rss: 468Mb
+#16777216	pulse  cov: 2 ft: 2 corp: 1/1b lim: 4096 exec/s: 127100 rss: 466Mb
+#33554432	pulse  cov: 2 ft: 2 corp: 1/1b lim: 4096 exec/s: 119837 rss: 470Mb
+
+Thread 1 "fuzz_executable" received signal SIGINT, Interrupt.
+BFD: reopening /home/victor/workspace/semantic-kernel-Demo/fuzz_executable: 没有那个文件或目录
+
+BFD: reopening /home/victor/workspace/semantic-kernel-Demo/fuzz_executable: 没有那个文件或目录
+
+BFD: reopening /home/victor/workspace/semantic-kernel-Demo/fuzz_executable: 没有那个文件或目录
+
+warning: Can't read data for section '.eh_frame' in file '/home/victor/workspace/semantic-kernel-Demo/fuzz_executable'
+0x00007ffff788dec2 in __GI__IO_default_xsputn (f=0x7fffffffc610, data=<optimized out>, n=<optimized out>) at ./libio/genops.c:404
+404	./libio/genops.c: 没有那个文件或目录.
+[?2004hA debugging session is active.
+
+	Inferior 1 [process 664937] will be killed.
+
+Quit anyway? (y or n) Quit
+[?2004l[?2004h(gdb) 

@@ -1,6 +1,5 @@
 {
-    "target_function" : "coap_pdu_parse, coap_show_pdu, coap_pdu_encode_header",
-    "source_code_file" : "coap_uri.c",
+    "target_function" : "lodepng::decode",
+    "source_code_file" : "lodepng.cpp",
     "lib_path" : "",
-    "compile_json_path" : "/home/victor/workspace/fuzzing_target_repo/libcoap/compile_commands.json"
-}
+    "compile_json_path" : ""

@@ -18,3 +18,5 @@ def run_gdb_and_capture_output():
     with open("asan_report.log", "r") as file:
         debug_info = file.read()
         return debug_info
+
+# run_gdb_and_capture_output()

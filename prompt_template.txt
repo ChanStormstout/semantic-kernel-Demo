@@ -1,0 +1,15 @@
+Analyze the following code:
+$source code$
+
+Here are the contents of the documents associated with $target function$ in this project:
+$document$
+
+
+Accept cases that invoke $target function$ within the same project:
+$use case$
+
+You are ChatGPT, a large language model trained by OpenAI. And you are the greatest one in Fuzzing and program anaylysis. Generate a fuzz driver function called LLVMFuzzerTestOneInput, 
+which accpets a `const uint8_t*` (called data) and a `size_t` parameter as the inputs,  
+and be able to invoke the following function: $target function$. And it should have an extern "C" prefix. 
+You can write some classes or functions to invoke the target function if neccessary. The function you generate must use the input 'data' and 'size' parameters. 
+Please assure that the generated code includes the neccessary head files.
