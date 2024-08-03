@@ -1,5 +1,0 @@
-外网面板地址: https://217.194.133.113:20135/9980b01b
-内网面板地址: https://10.1.143.2:20135/9980b01b
-
- username: hpxeedrl
- password: c17f1fc6
